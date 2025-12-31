@@ -4,6 +4,18 @@ local ButtonGroup = require("./ButtonGroup")
 local Iris = require("@pkgs/Iris")
 local launcher = require("@src/atoms/launcher")
 
+local COMMAND_HIGHLIGHTED_CONFIG = {
+	ButtonTransparency = 0.5,
+	ButtonHoveredTransparency = 0.5,
+	ButtonActiveTransparency = 0.25,
+}
+
+local COMMAND_DEFAULT_CONFIG = {
+	ButtonTransparency = 1,
+	ButtonHoveredTransparency = 0.5,
+	ButtonActiveTransparency = 0.25,
+}
+
 local WINDOW_ARGS = {
 	"Rocket Launcher",
 	true, -- NoTitleBar
@@ -43,27 +55,37 @@ local function renderLauncher()
 		-- inputField:CaptureFocus()
 	end
 
-	local extensionContainer = Iris.Table({ 1 })
-	-- HACK: iris has no proper layouting widgets
-	local extensionContainerSize = windowSize - Vector2.new(0, 24 * 2)
-	extensionContainer.Instance.Size = UDim2.fromOffset(extensionContainerSize.X, extensionContainerSize.Y)
-	for _, cmd in launcher.searchResults() do
-		local button = ButtonGroup()
-		button.Instance.Size = UDim2.new(1, 0, 0, button.Instance.Size.Height.Offset)
+	if launcher.commandRenderer then
+		launcher.commandRenderer()
+	else
+		local extensionContainer = Iris.Table({ 1 })
+		-- HACK: iris has no proper layouting widgets
+		local extensionContainerSize = windowSize - Vector2.new(0, 24 * 2)
+		extensionContainer.Instance.Size = UDim2.fromOffset(extensionContainerSize.X, extensionContainerSize.Y)
+		local selectedIndex = launcher.selectedIndex()
+		for i, cmd in launcher.searchResults() do
+			Iris.PushConfig(if selectedIndex == i then COMMAND_HIGHLIGHTED_CONFIG else COMMAND_DEFAULT_CONFIG)
 
-		Iris.Text({ cmd._metadata.title })
+			local button = ButtonGroup()
+			button.Instance.Size = UDim2.new(1, 0, 0, button.Instance.Size.Height.Offset)
+			button.Instance.LayoutOrder = i
 
-		Iris.PushConfig({ TextTransparency = 0.5 })
-		Iris.Text({ cmd._extension._metadata.title })
-		Iris.PopConfig()
+			Iris.Text({ cmd._metadata.title })
 
-		Iris.End()
+			Iris.PushConfig({ TextTransparency = 0.5 })
+			Iris.Text({ cmd._extension._metadata.title })
+			Iris.PopConfig()
 
-		if button.clicked() then
-			launcher.runCommand:Fire(cmd)
+			Iris.End()
+
+			if button.clicked() then
+				launcher.runCommand:Fire(cmd)
+			end
+
+			Iris.PopConfig()
 		end
+		Iris.End()
 	end
-	Iris.End()
 
 	Iris.End()
 	Iris.PopConfig()

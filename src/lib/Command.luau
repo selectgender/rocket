@@ -20,7 +20,7 @@ export type CommandMetadata = {
 
 	run: (ctx: CommandContext) -> ()?,
 	renderInViewport: (ctx: CommandContext) -> ()?,
-	renderInPalette: (ctx: CommandContext) -> ()?,
+	renderInLauncher: (ctx: CommandContext) -> ()?,
 }
 
 -- LUAU: extension is typed as any to prevent cyclic dependencies

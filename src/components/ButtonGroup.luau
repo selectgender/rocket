@@ -36,6 +36,8 @@ Iris.Internal.WidgetConstructor(
 			ButtonGroup.AutoButtonColor = false
 			ButtonGroup.Text = ""
 
+			widgets.UIListLayout(ButtonGroup, Enum.FillDirection.Horizontal, UDim.new(0, Iris._config.ItemSpacing.X))
+
 			widgets.applyFrameStyle(ButtonGroup)
 
 			widgets.applyInteractionHighlights("Background", ButtonGroup, ButtonGroup, {
@@ -46,8 +48,6 @@ Iris.Internal.WidgetConstructor(
 				ActiveColor = Iris._config.ButtonActiveColor,
 				ActiveTransparency = Iris._config.ButtonActiveTransparency,
 			})
-
-			widgets.UIListLayout(ButtonGroup, Enum.FillDirection.Horizontal, UDim.new(0, Iris._config.ItemSpacing.X))
 
 			return ButtonGroup
 		end,

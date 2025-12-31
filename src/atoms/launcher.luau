@@ -10,6 +10,8 @@ launcher.isFocused = Charm.atom(false)
 launcher.selectedIndex = Charm.atom(1)
 launcher.search = Charm.atom("")
 
+launcher.commandRenderer = nil :: () -> ()?
+
 launcher.searchResults = Charm.computed(function(): { Command.Command }
 	local search = launcher.search()
 	local allCommands = Extension.allCommands()
@@ -27,6 +29,6 @@ launcher.searchResults = Charm.computed(function(): { Command.Command }
 	return haystack
 end)
 
-launcher.run = Signal.new() :: Signal.Signal<Command.Command>
+launcher.runCommand = Signal.new() :: Signal.Signal<Command.Command>
 
-return table.freeze(launcher)
+return launcher
