@@ -25,7 +25,7 @@ Iris.Internal.WidgetConstructor(
 )
 
 local function Flex(mode: Enum.UIFlexMode?)
-	return Iris.Internal._Insert("Spacer", { mode })
+	return Iris.Internal._Insert("Flex", { mode })
 end
 
 return Flex

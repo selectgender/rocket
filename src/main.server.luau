@@ -15,6 +15,7 @@ local SettingsWindow = require("@src/components/settings/SettingsWindow")
 local Trove = require("@pkgs/Trove")
 local assets = require("./assets")
 local launcher = require("@src/atoms/launcher")
+local pages = require("@src/components/settings/pages")
 local settings = require("@src/atoms/settings")
 
 local pluginTrove = Trove.new()
@@ -25,6 +26,7 @@ local function toggleIsLauncherVisible()
 end
 
 local function toggleIsSettingsVisible()
+	settings.currentPage(pages[1])
 	settings.isVisible(not settings.isVisible())
 end
 

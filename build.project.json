@@ -2,11 +2,17 @@
 	"name": "Rocket",
 	"tree": {
 		"$className": "Folder",
-		"rocket": {
-			"$path": "out"
-		},
-		"packages": {
-			"$path": "roblox_packages"
+		"Rocket": {
+			"$path": "out",
+			"include": {
+				"$className": "Folder",
+				"packages": {
+					"$path": "roblox_packages"
+				},
+				"manifest": {
+					"$path": "./pesde.toml"
+				}
+			}
 		}
 	}
 }

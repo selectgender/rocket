@@ -1,13 +1,20 @@
+local Selection = game:GetService("Selection")
+
 local ButtonGroup = require("@src/components/foundations/ButtonGroup")
 local Extension = require("@src/lib/Extension")
+local Flex = require("@src/components/foundations/Flex")
+local Frame = require("@src/components/foundations/Frame")
 local Icon = require("@src/lib/Icon")
 local Iris = require("@pkgs/Iris")
+local ScrollingFrame = require("@src/components/foundations/ScrollingFrame")
 local assets = require("@src/assets")
 local types = require("@src/components/settings/types")
 
 local extensions = {} :: types.SettingPage
+extensions.id = "extensions"
 extensions.title = "Extensions"
 extensions.tabIcon = assets.icons.extension
+extensions.extensionIcon = assets.extensions.settings.extensions
 
 function extensions.render()
 	local _showEnabled = Iris.State(true)
@@ -41,12 +48,15 @@ function extensions.render()
 	Iris.MenuToggle({ "Show Core Extensions" }, { isChecked = showCore })
 	Iris.MenuToggle({ "Show Third-Party Extensions" }, { isChecked = showThirdParty })
 	Iris.End()
-	Iris.InputText({ "", "Search for commands..." })
+	Iris.InputText({ "", "Search commands..." })
 	Iris.End()
 	Iris.PopConfig()
 
-	Iris.SeparatorText({ "" })
+	Iris.Table({ 2, false, false, false, true })
 
+	ScrollingFrame(UDim2.fromScale(1, 0), Enum.AutomaticSize.Y)
+	Flex(Enum.UIFlexMode.Fill)
+	Frame(UDim2.fromScale(1, 0), Enum.AutomaticSize.Y)
 	local extensionsCollapsed = collapsedExtensions:get()
 	for i, extension in Extension.sortedByTitle() do
 		local isCoreExtension = extension:isCore()
@@ -99,6 +109,14 @@ function extensions.render()
 		Iris.PopId()
 	end
 	collapsedExtensions:set(extensionsCollapsed)
+	Iris.End()
+	Iris.End()
+
+	Iris.NextColumn()
+	for _ = 1, 20 do
+		Iris.Text({ "hello" })
+	end
+	Iris.End()
 end
 
 return extensions

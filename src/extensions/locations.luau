@@ -5,8 +5,8 @@ local assets = require("@src/assets")
 
 local plugin = script:FindFirstAncestorWhichIsA("Plugin") :: Plugin
 local ext = Extension.new(plugin, {
-	id = "rocket-location",
-	title = "Location",
+	id = "rocket-locations",
+	title = "Locations",
 	description = "Save and restore camera locations",
 	icon = { Image = assets.extensions.locations },
 	authors = { "Team Fireworks" },

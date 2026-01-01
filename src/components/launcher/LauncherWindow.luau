@@ -65,7 +65,7 @@ local function LauncherWindow()
 			commandContext.trove:Clean()
 		end
 	else
-		local input = Iris.InputText({ "", "Search for apps and commands..." })
+		local input = Iris.InputText({ "", "Search commands..." })
 		Iris.PopConfig()
 		Iris.Separator()
 
