@@ -14,12 +14,18 @@ local Trove = require("@pkgs/Trove")
 local assets = require("./assets")
 local launcher = require("@src/atoms/launcher")
 local renderLauncher = require("@src/components/renderLauncher")
+local renderSettings = require("@src/components/renderSettings")
+local settings = require("@src/atoms/settings")
 
 local pluginTrove = Trove.new()
 pluginTrove:Add(plugin.Unloading:Connect(pluginTrove:WrapClean()))
 
-local function toggleIsPaletteVisibile()
+local function toggleIsLauncherVisible()
 	launcher.isVisible(not launcher.isVisible())
+end
+
+local function toggleIsSettingsVisible()
+	settings.isVisible(not settings.isVisible())
 end
 
 local function start()
@@ -33,23 +39,28 @@ local function start()
 		end
 	end
 
-	print(table.concat(Extension.commandTitles(), ", "))
-
-	local launchAction = (
-		plugin:CreatePluginAction("@rocket/launch", "Launch Rocket", "Launches the Rocket command palette", "", false)
-	)
-
 	local toolbar = plugin:CreateToolbar("Rocket")
 	local launchButton = (
 		toolbar:CreateButton("@rocket/launch", "Launches the Rocket command palette", assets.brand.rocket, "Launch")
 	)
 
-	local _settingsButton = (
+	local settingsButton = (
 		toolbar:CreateButton("@rocket/settings", "Configure Rocket", assets.brand.settings, "Settings")
 	)
 
-	launchAction.Triggered:Connect(toggleIsPaletteVisibile)
-	launchButton.Click:Connect(toggleIsPaletteVisibile)
+	local launchAction = (
+		plugin:CreatePluginAction(
+			"@rocket/launch",
+			"Launch Rocket",
+			"Launches the Rocket command palette",
+			assets.brand.rocket,
+			true
+		)
+	)
+
+	launchButton.Click:Connect(toggleIsLauncherVisible)
+	settingsButton.Click:Connect(toggleIsSettingsVisible)
+	launchAction.Triggered:Connect(toggleIsLauncherVisible)
 
 	local launcherInputTrove = pluginTrove:Extend()
 	pluginTrove:Add(Charm.subscribe(launcher.isVisible, function(isVisible)
@@ -69,11 +80,42 @@ local function start()
 				elseif keycode == Enum.KeyCode.Return then
 					launcher.runCommand:Fire(Extension.allCommands()[launcher.selectedIndex()])
 				elseif keycode == Enum.KeyCode.Escape then
-					launcher.isVisible(false)
+					local commandContext = launcher.commandContext
+					if commandContext then
+						commandContext.trove:Clean()
+					else
+						launcher.isVisible(false)
+					end
 				end
 			end))
 		end
 	end) :: any)
+
+	local commandActions: { [Command.Command]: PluginAction } = {}
+	local function createCommandPluginActions(newCommands: { Command.Command })
+		for _, cmd in newCommands do
+			if not commandActions[cmd] then
+				local action = plugin:CreatePluginAction(
+					`@rocket/command/{cmd:formatId()}`,
+					cmd._metadata.title,
+					cmd._metadata.description,
+					cmd._metadata.icon and cmd._metadata.icon.Image
+						or cmd._extension._metadata.icon.Image
+						or assets.brand.rocket,
+					true
+				)
+
+				action.Triggered:Connect(function()
+					launcher.runCommand:Fire(cmd)
+				end)
+
+				commandActions[cmd] = action
+			end
+		end
+	end
+
+	Charm.subscribe(Extension.allCommands, createCommandPluginActions)
+	task.spawn(createCommandPluginActions, Extension.allCommands())
 
 	local viewportCommands: { [Command.Command]: Command.CommandContext } = {}
 	pluginTrove:Add(launcher.runCommand:Connect(function(cmd: Command.Command)
@@ -142,6 +184,10 @@ local function start()
 	Iris:Connect(function()
 		if launcher.isVisible() then
 			renderLauncher()
+		end
+
+		if settings.isVisible() then
+			renderSettings()
 		end
 
 		for _, cmd in Extension.allCommands() do
