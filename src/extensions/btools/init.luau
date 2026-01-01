@@ -15,10 +15,6 @@ ext:newCommand({
 	description = "Launches Rocket's modern suite of building tools.",
 
 	run = function() end,
-
-	renderInViewport = function(ctx: Extension.CommandContext)
-		ctx.iris.Text({ "Hello World" })
-	end,
 })
 
 return ext

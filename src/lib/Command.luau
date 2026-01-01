@@ -19,8 +19,10 @@ export type CommandMetadata = {
 	icon: string?,
 
 	run: (ctx: CommandContext) -> ()?,
+	runSelected: (ctx: CommandContext, instance: Instance) -> ()?,
 	renderInViewport: (ctx: CommandContext) -> ()?,
 	renderInLauncher: (ctx: CommandContext) -> ()?,
+	renderInLauncherNav: (ctx: CommandContext) -> ()?,
 }
 
 -- LUAU: extension is typed as any to prevent cyclic dependencies

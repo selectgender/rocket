@@ -51,6 +51,9 @@ export type Extension = setmetatable<{
 
 -- TODO: flow to validate third party plugins
 function Extension.new(extPlugin: Plugin, extMetadata: ExtensionMetadata): Extension
+	if Extension.extensionsById()[extMetadata.id] then
+		error(`Extension conflicts with id: {extMetadata.id}`)
+	end
 	local self = setmetatable({ _plugin = extPlugin, _metadata = extMetadata, _commands = {} }, Extension)
 	local allExtensions = table.clone(Extension.allExtensions())
 	allExtensions[self] = true

@@ -44,20 +44,43 @@ local function renderLauncher()
 	Iris.Window(WINDOW_ARGS, { position = windowSize / 2, size = windowSize } :: any)
 
 	Iris.PushConfig({ FrameRounding = 0 })
-	local input = Iris.InputText({ "", "Search for apps and commands..." })
-	Iris.PopConfig()
+	local commandToRender, commandContext = launcher.commandToRender, launcher.commandContext
+	if commandToRender and commandContext then
+		local render, renderNav =
+			commandToRender._metadata.renderInLauncher, commandToRender._metadata.renderInLauncherNav
 
-	local inputField = input.Instance:FindFirstChildOfClass("TextBox")
-	launcher.search(inputField and inputField.Text or "")
-	if not launcher.isFocused() and inputField then
-		launcher.isFocused(true)
-		-- this bricks your mouse??? how???
-		-- inputField:CaptureFocus()
-	end
+		if renderNav then
+			Iris.SameLine()
+		end
+		local back = Iris.Button({ "Back" })
+		if renderNav then
+			renderNav(commandContext)
+			Iris.End()
+		end
 
-	if launcher.commandRenderer then
-		launcher.commandRenderer()
+		Iris.PopConfig()
+		Iris.Separator()
+
+		if render then
+			render(commandContext)
+		end
+
+		if back.clicked() then
+			commandContext.trove:Clean()
+		end
 	else
+		local input = Iris.InputText({ "", "Search for apps and commands..." })
+		Iris.PopConfig()
+		Iris.Separator()
+
+		local inputField = input.Instance:FindFirstChildOfClass("TextBox")
+		launcher.search(inputField and inputField.Text or "")
+		if not launcher.isFocused() and inputField then
+			launcher.isFocused(true)
+			-- this bricks your mouse??? how???
+			-- inputField:CaptureFocus()
+		end
+
 		local extensionContainer = Iris.Table({ 1 })
 		-- HACK: iris has no proper layouting widgets
 		local extensionContainerSize = windowSize - Vector2.new(0, 24 * 2)

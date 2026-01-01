@@ -10,7 +10,9 @@ launcher.isFocused = Charm.atom(false)
 launcher.selectedIndex = Charm.atom(1)
 launcher.search = Charm.atom("")
 
-launcher.commandRenderer = nil :: () -> ()?
+-- FIXME: atoms dont work here...?
+launcher.commandToRender = nil :: Command.Command?
+launcher.commandContext = nil :: Command.CommandContext?
 
 launcher.searchResults = Charm.computed(function(): { Command.Command }
 	local search = launcher.search()

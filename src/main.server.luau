@@ -3,6 +3,7 @@ if not plugin then
 end
 
 local CoreGui = game:GetService("CoreGui")
+local Selection = game:GetService("Selection")
 local UserInputService = game:GetService("UserInputService")
 
 local Charm = require("@pkgs/Charm")
@@ -30,6 +31,8 @@ local function start()
 			end
 		end
 	end
+
+	print(table.concat(Extension.commandTitles(), ", "))
 
 	local launchAction = (
 		plugin:CreatePluginAction("@rocket/launch", "Launch Rocket", "Launches the Rocket command palette", "", false)
@@ -75,6 +78,7 @@ local function start()
 		}
 
 		local run = cmd._metadata.run
+		local runSelected = cmd._metadata.runSelected
 		local renderInLauncher = cmd._metadata.renderInLauncher
 		local renderInViewport = cmd._metadata.renderInViewport
 
@@ -82,17 +86,24 @@ local function start()
 			pcall(run, ctx)
 		end
 
+		if runSelected then
+			for _, instance in Selection:Get() do
+				pcall(runSelected, ctx, instance)
+			end
+		end
+
 		if not renderInLauncher and not renderInViewport then
 			cmdTrove:Clean()
 		else
 			if renderInLauncher then
-				local function render()
-					renderInLauncher(ctx)
-				end
-				launcher.commandRenderer = render
+				launcher.commandToRender = cmd
+				launcher.commandContext = ctx
 				cmdTrove:Add(function()
-					if launcher.commandRenderer == render then
-						launcher.commandRenderer = nil
+					if launcher.commandToRender == cmd then
+						launcher.commandToRender = nil
+					end
+					if launcher.commandContext == ctx then
+						launcher.commandContext = nil
 					end
 				end)
 				launcherInputTrove:Add(cmdTrove)
@@ -115,7 +126,7 @@ local function start()
 	ui.Parent = CoreGui
 
 	Iris.Init(ui :: any)
-	Iris.UpdateGlobalConfig({ RichText = true, FrameBorderSize = 0 })
+	Iris.UpdateGlobalConfig({ RichText = true, FrameBorderSize = 0, IgnoreGuiInset = true })
 	Iris.UpdateGlobalConfig(Iris.TemplateConfig.sizeClear :: any)
 	Iris:Connect(function()
 		if launcher.isVisible() then
