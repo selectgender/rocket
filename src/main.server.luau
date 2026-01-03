@@ -8,7 +8,9 @@ local UserInputService = game:GetService("UserInputService")
 
 local Charm = require("@pkgs/Charm")
 local Command = require("@src/Command")
+local CommandContext = require("@src/CommandContext")
 local Extension = require("@src/Extension")
+local Gizmos = require("./Gizmos")
 local Iris = require("@iris/Iris")
 local LauncherStore = require("@launcher/LauncherStore")
 local LauncherWindow = require("@launcher/LauncherWindow")
@@ -21,6 +23,13 @@ local assets = require("@src/assets")
 
 local pluginTrove = Trove.new()
 pluginTrove:Add(plugin.Unloading:Connect(pluginTrove:WrapClean()))
+
+local function createPluginAction(id: string, title: string, tooltip: string, icon: string)
+	id = "rocket/" .. id
+	local action = plugin:CreatePluginAction(id, title, tooltip, icon, true)
+	action.Name = id
+	return action
+end
 
 local function toggleIsLauncherVisible()
 	LauncherStore.isVisible(not LauncherStore.isVisible())
@@ -52,13 +61,7 @@ local function start()
 	)
 
 	local launchAction = (
-		plugin:CreatePluginAction(
-			"@rocket/launch",
-			"Launch Rocket",
-			"Launches the Rocket command palette",
-			assets.brand.rocket,
-			true
-		)
+		createPluginAction("launch", "Launch Rocket", "Launches the Rocket command palette", assets.brand.rocket)
 	)
 
 	launchButton.Click:Connect(toggleIsLauncherVisible)
@@ -109,14 +112,13 @@ local function start()
 	local function createCommandPluginActions(newCommands: { Command.Command })
 		for _, cmd in newCommands do
 			if not commandActions[cmd] then
-				local action = plugin:CreatePluginAction(
-					`@rocket/command/{cmd:formatId()}`,
+				local action = createPluginAction(
+					`command/{cmd:formatId()}`,
 					cmd._metadata.title,
 					cmd._metadata.description,
 					cmd._metadata.icon and cmd._metadata.icon.Image
 						or cmd._extension._metadata.icon.Image
-						or assets.brand.rocket,
-					true
+						or assets.brand.rocket
 				)
 
 				action.Triggered:Connect(function()
@@ -131,14 +133,10 @@ local function start()
 	Charm.subscribe(Extension.allCommands, createCommandPluginActions)
 	task.spawn(createCommandPluginActions, Extension.allCommands())
 
-	local viewportCommands: { [Command.Command]: Command.CommandContext } = {}
+	local viewportCommands: { [Command.Command]: CommandContext.CommandContext } = {}
 	pluginTrove:Add(LauncherStore.runCommand:Connect(function(cmd: Command.Command)
 		local cmdTrove = pluginTrove:Extend()
-		local ctx: Command.CommandContext = {
-			trove = cmdTrove,
-			iris = Iris,
-			mouse = plugin:GetMouse(),
-		}
+		local ctx = CommandContext.new(cmd, plugin, cmdTrove)
 
 		local run = cmd._metadata.run
 		local runSelected = cmd._metadata.runSelected
@@ -206,9 +204,13 @@ local function start()
 				(cmd._metadata.renderInViewport :: any)(ctx)
 			end
 		end
+
+		Gizmos.step()
 	end)
 
 	pluginTrove:Add(Iris.Shutdown :: any)
+	pluginTrove:Add(Gizmos.destroyPool)
+	pluginTrove:Add(Gizmos.getFolder())
 end
 
 local startSuccess, startError = pcall(start :: any)

@@ -65,10 +65,18 @@ local function LauncherWindow()
 			inputField:CaptureFocus()
 		end
 
-		local extensionContainer = Iris.Table({ 1 })
-		-- HACK: iris has no proper layouting widgets
-		local extensionContainerSize = windowSize - Vector2.new(0, 24 * 2)
-		extensionContainer.Instance.Size = UDim2.fromOffset(extensionContainerSize.X, extensionContainerSize.Y)
+		Iris.ScrollingFrame(UDim2.fromScale(1, 0), Enum.AutomaticSize.None)
+		Iris.Flex(Enum.UIFlexMode.Fill)
+
+		-- TODO: proper padding widget
+		local paddingInstance = Instance.new("UIPadding")
+		local horizontalPadding = UDim.new(0, Iris._config.CellPadding.X)
+		local verticalPadding = UDim.new(0, Iris._config.CellPadding.Y)
+		paddingInstance.PaddingLeft = horizontalPadding
+		paddingInstance.PaddingRight = horizontalPadding
+		paddingInstance.PaddingTop = verticalPadding
+		paddingInstance.PaddingBottom = verticalPadding
+		Iris.Append(paddingInstance :: any)
 
 		local selectedIndex = launcher.selectedIndex()
 		for i, cmd in launcher.searchResults() do

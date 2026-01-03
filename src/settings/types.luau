@@ -1,4 +1,4 @@
-export type SettingPage = {
+export type SettingsPage = {
 	id: string,
 	title: string,
 	tabIcon: string,

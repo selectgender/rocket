@@ -1,16 +1,8 @@
+local CommandContext = require("@src/CommandContext")
 local types = require("@src/types")
--- selene: allow(unused_variable)
-local Iris = require("@iris/Iris")
-local Trove = require("@pkgs/Trove")
 
 local Command = {}
 Command.__index = Command
-
-export type CommandContext = {
-	trove: Trove.Trove,
-	iris: typeof(Iris),
-	mouse: Mouse,
-}
 
 export type CommandMetadata = {
 	id: string,
@@ -18,11 +10,11 @@ export type CommandMetadata = {
 	description: string,
 	icon: types.Icon?,
 
-	run: (ctx: CommandContext) -> ()?,
-	runSelected: (ctx: CommandContext, instance: Instance) -> ()?,
-	renderInViewport: (ctx: CommandContext) -> ()?,
-	renderInLauncher: (ctx: CommandContext) -> ()?,
-	renderInLauncherNav: (ctx: CommandContext) -> ()?,
+	run: (ctx: CommandContext.CommandContext) -> ()?,
+	runSelected: (ctx: CommandContext.CommandContext, instance: Instance) -> ()?,
+	renderInViewport: (ctx: CommandContext.CommandContext) -> ()?,
+	renderInLauncher: (ctx: CommandContext.CommandContext) -> ()?,
+	renderInLauncherNav: (ctx: CommandContext.CommandContext) -> ()?,
 }
 
 -- LUAU: extension is typed as any to prevent cyclic dependencies

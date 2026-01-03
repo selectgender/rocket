@@ -1,10 +1,11 @@
 local Charm = require("@pkgs/Charm")
 local Command = require("@src/Command")
+local CommandContext = require("@src/CommandContext")
 local types = require("@src/types")
 
 local plugin = script:FindFirstAncestorWhichIsA("Plugin")
 
-export type CommandContext = Command.CommandContext
+export type CommandContext = CommandContext.CommandContext
 
 local Extension = {}
 Extension.__index = Extension

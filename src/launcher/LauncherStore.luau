@@ -1,5 +1,6 @@
 local Charm = require("@pkgs/Charm")
 local Command = require("@src/Command")
+local CommandContext = require("@src/CommandContext")
 local Extension = require("@src/Extension")
 local Signal = require("@pkgs/Signal")
 local fzy = require("@vendor/fzy")
@@ -12,7 +13,7 @@ LauncherStore.search = Charm.atom("")
 
 -- FIXME: atoms dont work here...?
 LauncherStore.commandToRender = nil :: Command.Command?
-LauncherStore.commandContext = nil :: Command.CommandContext?
+LauncherStore.commandContext = nil :: CommandContext.CommandContext?
 
 LauncherStore.searchResults = Charm.computed(function(): { Command.Command }
 	local search = LauncherStore.search()
