@@ -1,4 +1,4 @@
-name: nightly
+name: build
 
 on:
     push:
@@ -25,4 +25,5 @@ jobs:
               run: lune run build model
             - uses: actions/upload-artifact@v4
               with:
+                  name: Plugin
                   path: Rocket.rbxm
