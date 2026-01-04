@@ -12,6 +12,27 @@ Extension.__index = Extension
 
 Extension.allExtensions = Charm.atom({} :: { [Extension]: true })
 
+Extension.sortedByTitle = Charm.computed(function(): { Extension }
+	local result = {}
+	for extension in Extension.allExtensions() do
+		table.insert(result, extension)
+	end
+	table.sort(result, function(lhs: Extension, rhs: Extension): boolean
+		return lhs._metadata.title < rhs._metadata.title
+	end)
+	return result
+end)
+
+Extension.extensionTitles = Charm.computed(function(): { string }
+	local allExtensions = Extension.sortedByTitle()
+	local result = table.create(#allExtensions) :: { string }
+	for _, ext in allExtensions do
+		table.insert(result, ext._metadata.title)
+	end
+	table.sort(result)
+	return result
+end)
+
 Extension.allCommands = Charm.computed(function(): { Command.Command }
 	local result = {}
 	for extension in Extension.allExtensions() do
@@ -21,13 +42,12 @@ Extension.allCommands = Charm.computed(function(): { Command.Command }
 	return result
 end)
 
-Extension.extensionTitles = Charm.computed(function(): { string }
-	local allExtensions = Extension.allExtensions()
-	local result = table.create(#allExtensions) :: { string }
-	for ext in allExtensions do
-		table.insert(result, ext._metadata.title)
+Extension.commandToIndex = Charm.computed(function(): { [Command.Command]: number }
+	local allCommands = Extension.allCommands()
+	local result = table.create(#allCommands) :: { [Command.Command]: number }
+	for index, command in allCommands do
+		result[command] = index
 	end
-	table.sort(result)
 	return result
 end)
 
@@ -37,17 +57,6 @@ Extension.commandTitles = Charm.computed(function(): { string }
 	for i, cmd in allCommands do
 		result[i] = cmd._metadata.title
 	end
-	return result
-end)
-
-Extension.sortedByTitle = Charm.computed(function(): { Extension }
-	local result = {}
-	for extension in Extension.allExtensions() do
-		table.insert(result, extension)
-	end
-	table.sort(result, function(lhs: Extension, rhs: Extension): boolean
-		return lhs._metadata.title < rhs._metadata.title
-	end)
 	return result
 end)
 
