@@ -64,7 +64,7 @@ local base: types.PartialConfig = {
 	ResizeGripActiveTransparency = 0.05,
 
 	ItemWidth = UDim.new(1, 0),
-	ContentWidth = UDim.new(1, 0),
+	-- ContentWidth = UDim.new(1, 0),
 	ContentHeight = UDim.new(0, 0),
 
 	WindowPadding = Vector2.new(12, 8),
