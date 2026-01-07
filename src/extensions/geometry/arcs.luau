@@ -11,6 +11,7 @@
     - Discord Username: selectgender
 ]]
 
+local ChangeHistoryService = game:GetService("ChangeHistoryService")
 local UserInputService = game:GetService("UserInputService")
 
 local Extension = require("@src/Extension")
@@ -92,6 +93,120 @@ local function SurfaceSelectionGizmo(part: BasePart, surface: Enum.NormalId)
 	end
 end
 
+-- fattest function ive ever made. im not sure of a way to simplify all the if statements... so if youre reading this right now try to take a crack at the problem and maybe write up a quick pull request!
+local function getNextArcCFrame(
+	angle: number,
+	rotationType: string,
+	face: Enum.NormalId,
+	cframe: CFrame,
+	size: Vector3
+): CFrame
+	local offset: CFrame
+	local pivot_offset: CFrame
+	local angle_cframe: CFrame
+
+	if face == Enum.NormalId.Top then
+		offset = CFrame.new(0, size.Y, 0)
+
+		if rotationType == "Pitch" then
+			pivot_offset = CFrame.new(0, -size.Y / 2, math.sign(angle) * -size.Z / 2)
+			angle_cframe = CFrame.Angles(angle, 0, 0)
+		elseif rotationType == "Roll" then
+			pivot_offset = CFrame.new(math.sign(angle) * size.X / 2, -size.Y / 2, 0)
+			angle_cframe = CFrame.Angles(0, 0, angle)
+		end
+	elseif face == Enum.NormalId.Bottom then
+		offset = CFrame.new(0, -size.Y, 0)
+
+		if rotationType == "Pitch" then
+			pivot_offset = CFrame.new(0, size.Y / 2, math.sign(angle) * size.Z / 2)
+			angle_cframe = CFrame.Angles(angle, 0, 0)
+		elseif rotationType == "Roll" then
+			pivot_offset = CFrame.new(math.sign(angle) * -size.X / 2, size.Y / 2, 0)
+			angle_cframe = CFrame.Angles(0, 0, angle)
+		end
+	elseif face == Enum.NormalId.Left then
+		offset = CFrame.new(-size.X, 0, 0)
+
+		if rotationType == "Pitch" then
+			pivot_offset = CFrame.new(size.X / 2, math.sign(angle) * size.Y / 2, 0)
+			angle_cframe = CFrame.Angles(0, 0, angle)
+		elseif rotationType == "Yaw" then
+			pivot_offset = CFrame.new(size.X / 2, 0, math.sign(angle) * -size.Z / 2)
+			angle_cframe = CFrame.Angles(0, angle, 0)
+		end
+	elseif face == Enum.NormalId.Right then
+		offset = CFrame.new(size.X, 0, 0)
+
+		if rotationType == "Pitch" then
+			pivot_offset = CFrame.new(-size.X / 2, math.sign(angle) * -size.Y / 2, 0)
+			angle_cframe = CFrame.Angles(0, 0, angle)
+		elseif rotationType == "Yaw" then
+			pivot_offset = CFrame.new(-size.X / 2, 0, math.sign(angle) * size.Z / 2)
+			angle_cframe = CFrame.Angles(0, angle, 0)
+		end
+	elseif face == Enum.NormalId.Front then
+		offset = CFrame.new(0, 0, -size.Z)
+
+		if rotationType == "Pitch" then
+			pivot_offset = CFrame.new(0, math.sign(angle) * -size.Y / 2, size.Z / 2)
+			angle_cframe = CFrame.Angles(angle, 0, 0)
+		elseif rotationType == "Yaw" then
+			pivot_offset = CFrame.new(math.sign(angle) * size.X / 2, 0, size.Z / 2)
+			angle_cframe = CFrame.Angles(0, angle, 0)
+		end
+	elseif face == Enum.NormalId.Back then
+		offset = CFrame.new(0, 0, size.Z)
+
+		if rotationType == "Pitch" then
+			pivot_offset = CFrame.new(0, math.sign(angle) * size.Y / 2, -size.Z / 2)
+			angle_cframe = CFrame.Angles(angle, 0, 0)
+		elseif rotationType == "Yaw" then
+			pivot_offset = CFrame.new(math.sign(angle) * -size.X / 2, 0, -size.Z / 2)
+			angle_cframe = CFrame.Angles(0, angle, 0)
+		end
+	end
+
+	return cframe * offset * pivot_offset * angle_cframe * pivot_offset:Inverse()
+end
+
+local function renderArcs(
+	instances: { Instance },
+	amount: number,
+	angle: number,
+	rotationType: string,
+	face: Enum.NormalId
+)
+	local current = instances
+
+	for _ = 1, amount do
+		for index, instance in current do
+			local isAPart = instance:IsA("BasePart")
+
+			if not (isAPart or instance:IsA("Model")) then
+				continue
+			end
+
+			local clone = instance:Clone()
+
+			if isAPart then
+				clone = clone :: BasePart
+				clone.CFrame = getNextArcCFrame(angle, rotationType, face, (instance :: BasePart).CFrame, clone.Size)
+			else
+				clone = clone :: Model
+				clone:PivotTo(
+					getNextArcCFrame(angle, rotationType, face, (instance :: Model):GetPivot(), clone:GetExtentsSize())
+				)
+			end
+
+			clone.Parent = instance.Parent
+			current[index] = clone
+		end
+	end
+
+	return instances
+end
+
 ext:newCommand({
 	id = "arc-part",
 	title = "Arc Part",
@@ -103,11 +218,9 @@ ext:newCommand({
 
 	renderInViewport = function(ctx: Extension.CommandContext)
 		local Iris = ctx.iris
-		local mouse = ctx.mouse
 		local windowPositionState = Iris.State(UserInputService:GetMouseLocation())
 		local windowSizeState = Iris.State(Vector2.new(275, 250))
-		local window =
-			Iris.Window({ "Arc Settings" }, { position = windowPositionState, size = windowSizeState } :: any)
+		local window = Iris.Window({ "Arc Settings" }, { position = windowPositionState, size = windowSizeState })
 
 		if window.closed() then
 			ctx:cleanup()
@@ -118,6 +231,7 @@ ext:newCommand({
 			return
 		end
 
+		local mouse = ctx.mouse
 		local windowPosition = windowPositionState:get()
 		local windowSize = windowSizeState:get()
 		local mouseIsInWindow = mouse.X > windowPosition.X
@@ -125,131 +239,79 @@ ext:newCommand({
 			and mouse.Y > windowPosition.Y
 			and mouse.Y < windowPosition.Y + windowSize.Y
 		local mouseDown = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1)
-		local selectedPartState = Iris.State(mouse.Target)
-		local selectedSurfaceState = Iris.State(mouse.TargetSurface)
-		local target = mouse.Target
+		local selectedFaceState = Iris.State(Enum.NormalId.Front)
 
-		if not mouseIsInWindow and target then
-			SurfaceSelectionGizmo(target, mouse.TargetSurface)
+		if not mouseIsInWindow and mouse.Target and mouse.TargetSurface then
+			SurfaceSelectionGizmo(mouse.Target, mouse.TargetSurface)
 
 			if mouseDown then
-				selectedPartState:set(mouse.Target)
-				selectedSurfaceState:set(mouse.TargetSurface)
+				selectedFaceState:set(mouse.TargetSurface)
 			end
 		end
 
-		local selectedPart = selectedPartState:get()
-		local selectedSurface = selectedSurfaceState:get()
-
-		Iris.Text(`Part: {if selectedPart then selectedPart:GetFullName() else "none"}`)
-		Iris.Text(`Face: {if selectedSurface then selectedSurface.Name else "none"}`)
+		local selectedFace = selectedFaceState:get()
+		Iris.Text(`Face: {selectedFace}`)
 
 		local rotationTypeState = Iris.State("Pitch")
+		local rotationType = rotationTypeState:get()
+		local secondRotationType = if selectedFace == Enum.NormalId.Top or selectedFace == Enum.NormalId.Bottom
+			then "Roll"
+			else "Yaw"
+
+		if rotationType ~= "Pitch" and rotationType ~= secondRotationType then
+			rotationType = secondRotationType
+			rotationTypeState:set(secondRotationType)
+		end
+
 		Iris.SameLine()
 		Iris.RadioButton({ "Pitch", "Pitch" }, { index = rotationTypeState })
-		Iris.RadioButton({ "Yaw", "Yaw" }, { index = rotationTypeState })
+		Iris.RadioButton({ secondRotationType, secondRotationType }, { index = rotationTypeState })
 		Iris.End()
 
 		local angleState = Iris.State(0)
+		local angleDegrees = angleState:get()
+		local angleRadians = math.rad(angleDegrees)
 		Iris.SliderNum({ "Angle", 1, -180, 180 }, { number = angleState })
 
-		local previewCFrame: CFrame? = nil
-		if selectedPart and selectedSurface then
-			local angle = math.rad(angleState:get())
-			local rotationType = rotationTypeState:get()
-			local cframe = selectedPart.CFrame
-			local size = selectedPart.Size
-
-			-- CFrame.identity is a placeholder :D
-			local offset = CFrame.identity
-			local pivot_offset = CFrame.identity
-			local angle_cframe = CFrame.identity
-
-			if selectedSurface == Enum.NormalId.Top then
-				offset = CFrame.new(0, size.Y, 0)
-
-				if rotationType == "Pitch" then
-					pivot_offset = CFrame.new(0, -size.Y / 2, math.sign(angle) * -size.Z / 2)
-					angle_cframe = CFrame.Angles(angle, 0, 0)
-				elseif rotationType == "Yaw" then -- the correct term here is "Roll"... but when have we ever cared about correctness.... smh.....
-					pivot_offset = CFrame.new(math.sign(angle) * size.X / 2, -size.Y / 2, 0)
-					angle_cframe = CFrame.Angles(0, 0, angle)
-				end
-			elseif selectedSurface == Enum.NormalId.Bottom then
-				offset = CFrame.new(0, -size.Y, 0)
-
-				if rotationType == "Pitch" then
-					pivot_offset = CFrame.new(0, size.Y / 2, math.sign(angle) * size.Z / 2)
-					angle_cframe = CFrame.Angles(angle, 0, 0)
-				elseif rotationType == "Yaw" then
-					pivot_offset = CFrame.new(math.sign(angle) * -size.X / 2, size.Y / 2, 0)
-					angle_cframe = CFrame.Angles(0, 0, angle)
-				end
-			elseif selectedSurface == Enum.NormalId.Left then
-				offset = CFrame.new(-size.X, 0, 0)
-
-				if rotationType == "Pitch" then
-					pivot_offset = CFrame.new(size.X / 2, math.sign(angle) * size.Y / 2, 0)
-					angle_cframe = CFrame.Angles(0, 0, angle)
-				elseif rotationType == "Yaw" then
-					pivot_offset = CFrame.new(size.X / 2, 0, math.sign(angle) * -size.Z / 2)
-					angle_cframe = CFrame.Angles(0, angle, 0)
-				end
-			elseif selectedSurface == Enum.NormalId.Right then
-				offset = CFrame.new(size.X, 0, 0)
-
-				if rotationType == "Pitch" then
-					pivot_offset = CFrame.new(-size.X / 2, math.sign(angle) * -size.Y / 2, 0)
-					angle_cframe = CFrame.Angles(0, 0, angle)
-				elseif rotationType == "Yaw" then
-					pivot_offset = CFrame.new(-size.X / 2, 0, math.sign(angle) * size.Z / 2)
-					angle_cframe = CFrame.Angles(0, angle, 0)
-				end
-			elseif selectedSurface == Enum.NormalId.Front then
-				offset = CFrame.new(0, 0, -size.Z)
-
-				if rotationType == "Pitch" then
-					pivot_offset = CFrame.new(0, math.sign(angle) * -size.Y / 2, size.Z / 2)
-					angle_cframe = CFrame.Angles(angle, 0, 0)
-				elseif rotationType == "Yaw" then
-					pivot_offset = CFrame.new(math.sign(angle) * size.X / 2, 0, size.Z / 2)
-					angle_cframe = CFrame.Angles(0, angle, 0)
-				end
-			elseif selectedSurface == Enum.NormalId.Back then
-				offset = CFrame.new(0, 0, size.Z)
-
-				if rotationType == "Pitch" then
-					pivot_offset = CFrame.new(0, math.sign(angle) * size.Y / 2, -size.Z / 2)
-					angle_cframe = CFrame.Angles(angle, 0, 0)
-				elseif rotationType == "Yaw" then
-					pivot_offset = CFrame.new(math.sign(angle) * -size.X / 2, 0, -size.Z / 2)
-					angle_cframe = CFrame.Angles(0, angle, 0)
-				end
+		local selections = ctx:getSelection()
+		for _, instance in selections do
+			if instance:IsA("BasePart") then
+				local size = instance.Size
+				BoundingBoxGizmo(
+					getNextArcCFrame(angleRadians, rotationType, selectedFace, instance.CFrame, size),
+					size
+				)
+			elseif instance:IsA("Model") then
+				local size = instance:GetExtentsSize()
+				BoundingBoxGizmo(
+					getNextArcCFrame(angleRadians, rotationType, selectedFace, instance:GetPivot(), size),
+					size
+				)
 			end
-
-			previewCFrame = cframe * offset * pivot_offset * angle_cframe * pivot_offset:Inverse()
-			BoundingBoxGizmo(previewCFrame, size)
 		end
 
 		local amountState = Iris.State(1)
 		Iris.InputNum({ "Amount", 1, 1 }, { number = amountState })
 
-		local renderAllCount = if angleState:get() == 0 then 1 else 360 // math.abs(angleState:get()) - 1
+		local renderAllCount = if angleDegrees == 0 then 1 else 360 // math.abs(angleDegrees) - 1
 		if renderAllCount < amountState:get() then
 			amountState:set(renderAllCount)
 		end
 
 		Iris.SameLine()
 
-		if Iris.Button(`Render ({amountState:get()})`).clicked() and previewCFrame then
-			local clone = selectedPart:Clone()
-			clone.CFrame = previewCFrame
-			clone.Parent = workspace
-
-			selectedPartState:set(clone)
+		if Iris.Button(`Render ({amountState:get()})`).clicked() then
+			ctx:setSelection(
+				renderArcs(ctx:getSelection(), amountState:get(), angleRadians, rotationType, selectedFace)
+			)
+			ChangeHistoryService:SetWaypoint("Rocket Arc Part Render Amount")
 		end
 
-		Iris.Button(`Render All ({renderAllCount})`)
+		if Iris.Button(`Render All ({renderAllCount})`).clicked() then
+			ctx:setSelection(renderArcs(ctx:getSelection(), renderAllCount, angleRadians, rotationType, selectedFace))
+			ChangeHistoryService:SetWaypoint("Rocket Arc Part Render All")
+		end
+
 		Iris.End()
 
 		Iris.End()
